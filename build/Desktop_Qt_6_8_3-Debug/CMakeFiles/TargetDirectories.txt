@@ -1,0 +1,9 @@
+/home/boroda/Qt/QtProjects/linalg/build/Desktop_Qt_6_8_3-Debug/CMakeFiles/linalg.dir
+/home/boroda/Qt/QtProjects/linalg/build/Desktop_Qt_6_8_3-Debug/CMakeFiles/edit_cache.dir
+/home/boroda/Qt/QtProjects/linalg/build/Desktop_Qt_6_8_3-Debug/CMakeFiles/rebuild_cache.dir
+/home/boroda/Qt/QtProjects/linalg/build/Desktop_Qt_6_8_3-Debug/CMakeFiles/list_install_components.dir
+/home/boroda/Qt/QtProjects/linalg/build/Desktop_Qt_6_8_3-Debug/CMakeFiles/install.dir
+/home/boroda/Qt/QtProjects/linalg/build/Desktop_Qt_6_8_3-Debug/CMakeFiles/install/local.dir
+/home/boroda/Qt/QtProjects/linalg/build/Desktop_Qt_6_8_3-Debug/CMakeFiles/install/strip.dir
+/home/boroda/Qt/QtProjects/linalg/build/Desktop_Qt_6_8_3-Debug/CMakeFiles/linalg_autogen_timestamp_deps.dir
+/home/boroda/Qt/QtProjects/linalg/build/Desktop_Qt_6_8_3-Debug/CMakeFiles/linalg_autogen.dir
