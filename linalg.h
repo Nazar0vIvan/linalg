@@ -6,14 +6,27 @@
 #include <QString>
 
 // ------------ Math ------------
+
+using Frame = Eigen::Matrix<double, 6, 1>; // row 6x1
+
 struct Plane {
   double A, B, C, D;   // A*x + B*y + C*z + D = 0
   double AA, BB, DD;   // z = AA*x + BB*y + DD
 };
 
-struct Frame {
-  Eigen::Matrix<double, 6, 1> frame;
+struct Cylinder {
+  static Cylinder fromAxis(const Eigen::Vector3d& c1_,
+                           const Eigen::Vector3d& c2_,
+                           double R_);
+  double R;
+  Frame frame; // [X,Y,Z,A,B,C]
   Eigen::Matrix4d transform;
+};
+
+struct EulerSolution {
+  double A1, A2; // yaw (Z)
+  double B1, B2; // pitch (Y)
+  double C1, C2; // roll (X)
 };
 
 Eigen::Matrix4d trMatrix4x4(const Eigen::Vector3d& delta);
@@ -23,6 +36,10 @@ Plane pointsToPlane(const Eigen::Ref<const Eigen::VectorXd>& x,
                     const Eigen::Ref<const Eigen::VectorXd>& z);
 Eigen::Vector3d poly(double x0, double x1, double x2,
                      double y0, double y1, double y2);
+
+EulerSolution rot2euler(const Eigen::Matrix3d& R, bool is_deg = false);
+Eigen::Matrix3d euler2rot(double A, double B, double C, bool is_deg = false);
+
 
 // ------------ Frene ------------
 struct Frene {
@@ -42,16 +59,7 @@ Frene getFreneByPoly(const Eigen::Vector3d& p0,
                      const Eigen::Vector3d& v1);
 
 Frene getFreneByCirc(const Eigen::Vector3d& pt0,
-                            const Eigen::Vector3d& ptc)
-{
-  Eigen::Vector3d v = pt0 - ptc;
-  Eigen::Vector3d n = v.normalized();    // unit normal (radial)
-  Eigen::Vector3d t(-n.y(), n.x(), 0.0); // in-plane tangent
-  if (t.x() < 0.0) t = -t;
-  Eigen::Vector3d b = n.cross(t);        // binormal
-
-  return Frene(t, b, n, pt0);
-}
+                     const Eigen::Vector3d& ptc);
 
 // ------------ Blade ------------
 using MatN3 = Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>;
@@ -62,6 +70,7 @@ Frame getBeltFrame(const Eigen::Vector3d& o,
                    const Eigen::Ref<const Eigen::VectorXd>& x,
                    const Eigen::Ref<const Eigen::VectorXd>& y,
                    const Eigen::Ref<const Eigen::VectorXd>& z);
+
 Airfoil loadBladeJson(const QString& filePath);
 
 

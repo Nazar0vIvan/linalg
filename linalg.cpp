@@ -63,6 +63,37 @@ Eigen::Vector3d poly(double x0, double x1, double x2,
   return A.colPivHouseholderQr().solve(B);
 }
 
+EulerSolution rot2euler(const Eigen::Matrix3d &R, bool is_deg)
+{
+  const double B1 = -std::asin(R(2,0));
+  const double B2 = M_PI + std::asin(R(2,0));
+
+  const double cB1 = std::cos(B1);
+  const double cB2 = std::cos(B2);
+
+  const double C1 = std::atan2(R(2,1) / cB1, R(2,2) / cB1);
+  const double C2 = std::atan2(R(2,1) / cB2, R(2,2) / cB2);
+
+  const double A1 = std::atan2(R(1,0) / cB1, R(0,0) / cB1);
+  const double A2 = std::atan2(R(1,0) / cB2, R(0,0) / cB2);
+
+  const double k = is_deg ? (180.0 / M_PI) : 1.0;
+
+  return { k*A1, k*A2, k*B1, k*B2, k*C1, k*C2 };
+}
+
+Eigen::Matrix3d euler2rot(double A, double B, double C, bool is_deg)
+{
+  const double k = is_deg ? (180.0 / M_PI) : 1.0;
+  Eigen::Matrix3d R =
+      (Eigen::AngleAxisd(A*k, Eigen::Vector3d::UnitZ()) *
+       Eigen::AngleAxisd(B*k, Eigen::Vector3d::UnitY()) *
+       Eigen::AngleAxisd(C*k, Eigen::Vector3d::UnitX())).toRotationMatrix();
+  double eps = 1e-4;
+  R = R.unaryExpr([&](double v) { return std::abs(v) <= eps ? 0.0 : v; });
+  return R;
+}
+
 // ------------ Frene ------------
 Frene::Frene(const Eigen::Vector3d& t_,
              const Eigen::Vector3d& b_,
@@ -92,6 +123,17 @@ Frene getFreneByPoly(const Eigen::Vector3d& p0,
   Eigen::Vector3d n = tanu.cross(tanv).normalized();
   Eigen::Vector3d b = n.cross(tanu).normalized();
   return Frene(tanu, b, n, p0);
+}
+
+Frene getFreneByCirc(const Eigen::Vector3d &pt0, const Eigen::Vector3d &ptc)
+{
+  Eigen::Vector3d v = pt0 - ptc;
+  Eigen::Vector3d n = v.normalized();    // unit normal (radial)
+  Eigen::Vector3d t(-n.y(), n.x(), 0.0); // in-plane tangent
+  if (t.x() < 0.0) t = -t;
+  Eigen::Vector3d b = n.cross(t);        // binormal
+
+  return Frene(t, b, n, pt0);
 }
 
 // ------------ Blade ------------
@@ -161,8 +203,35 @@ Frame getBeltFrame(const Eigen::Vector3d& o,
   const double B = std::asin(-T(2,0)) * 180.0/M_PI;
   const double C = std::atan2(T(2,1), T(2,2)) * 180.0/M_PI;
 
-  Frame out;
-  out.frame << o.x(), o.y(), o.z(), A, B, C;
-  out.transform = T;
-  return out;
+  return { o.x(), o.y(), o.z(), A, B, C };
 }
+
+Cylinder Cylinder::fromAxis(const Eigen::Vector3d &c1,
+                            const Eigen::Vector3d &c2,
+                            double R)
+{
+  // unit vector along cyl axis in WCS
+  Eigen::Vector3d y = c1 - c2;
+  y /= y.norm();
+  // unit vector along cyl radius in WCS
+  Eigen::Vector3d z = Eigen::Vector3d::UnitX() - Eigen::Vector3d::UnitX().dot(y) * y;
+  z /= z.norm();
+  // third unit vector form right system in WCS
+  Eigen::Vector3d x = y.cross(z).normalized();
+  // point on cyl surf on WCS
+  const Eigen::Vector3d o = 0.5 * (c1 + c2) + R * z;
+  // Transform matrix from CSCS to WCS
+  Eigen::Matrix4d transform; transform.setIdentity();
+  transform.block<3,3>(0,0) << x, y, z;
+  transform.block<3,1>(0,3) = o;
+  // Get Frame
+  EulerSolution angles = rot2euler(transform.topLeftCorner<3,3>(), true);
+
+  Frame frame;
+  frame << o, angles.A1, angles.B1, angles.C1;
+
+  return { R, frame, transform };
+}
+
+
+
